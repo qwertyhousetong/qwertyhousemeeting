@@ -1,0 +1,553 @@
+import React, { useState } from 'react';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, 
+  ScatterChart, Scatter, ZAxis, Cell, PieChart, Pie, Legend
+} from 'recharts';
+import { 
+  FileText, Target, TrendingUp, MapPin, DollarSign, 
+  Briefcase, AlertCircle, CheckCircle, ArrowRight, Layers,
+  PieChart as PieIcon, BarChart2, Search, Smartphone, Globe, Star,
+  Facebook, Instagram, Map, ThumbsUp, RefreshCw, Users, Swords, Calendar
+} from 'lucide-react';
+
+// --- ข้อมูลจากอินเทอร์เน็ตและไฟล์ CSV ---
+
+// 1. ข้อมูลสาขาและ Social Media
+const socialPresence = {
+  branches: [
+    { name: "Silin Salon สาขาราชพฤกษ์", rating: 4.9, reviews: 156, status: "Active" },
+    { name: "Silin Salon สาขากาญจนาภิเษก", rating: 4.8, reviews: 124, status: "Active" },
+    { name: "Arin Salon สาขามหาชัย", rating: 4.5, reviews: 82, status: "Rebranding Pending" }
+  ],
+  stats: {
+    facebook: { followers: "12.5K", engagement: "High" }, 
+    instagram: { followers: "8.2K", engagement: "Moderate" },
+    google: { rating: "4.8/5.0", totalReviews: "360+" }
+  }
+};
+
+// 2. ข้อมูลคู่แข่ง (Competitor Analysis) - จากการค้นหา
+const competitorData = [
+  { 
+    name: "Elite Hair (ราชพฤกษ์)", 
+    area: "ราชพฤกษ์", 
+    strength: "บริการดี ราคาเข้าถึงง่าย", 
+    weakness: "การจองคิวอาจเต็มเร็วในช่วงเย็น",
+    social: "รีวิวดีใน Wongnai เรื่องทำสี",
+    priceLevel: "฿฿"
+  },
+  { 
+    name: "Cozy Salon", 
+    area: "ราชพฤกษ์", 
+    strength: "บรรยากาศดี สไตล์เกาหลี", 
+    weakness: "ราคาค่อนข้างสูง",
+    social: "ดังใน Lemon8 เรื่องดัดผมดิจิตอล",
+    priceLevel: "฿฿฿"
+  },
+  { 
+    name: "Fin Hair Shop (กาญจนาภิเษก)", 
+    area: "กาญจนาภิเษก", 
+    strength: "ตั้งอยู่ในห้าง (Paseo) สะดวก", 
+    weakness: "เน้นลูกค้า Walk-in อาจรอคิวนาน",
+    social: "เป็นที่รู้จักในย่านบางใหญ่",
+    priceLevel: "฿฿"
+  },
+  { 
+    name: "ร้านเตือน บิวตี้ (มหาชัย)", 
+    area: "มหาชัย", 
+    strength: "ราคาถูกมาก (350.-)", 
+    weakness: "ร้านสไตล์ดั้งเดิม ไม่เน้นความหรูหรา",
+    social: "รีวิวว่าเป็นร้านจริงใจใน Lemon8",
+    priceLevel: "฿"
+  }
+];
+
+// 3. ข้อมูลคีย์เวิร์ด
+const detailedKeywordData = [
+  { term: "ร้านทําผม ใกล้ฉัน", vol: 90500, cpc: 6.30, diff: 25, intent: "Commercial", type: "High Vol" },
+  { term: "ร้านทำผม", vol: 49500, cpc: 5.67, diff: 11, intent: "Info/Comm", type: "High Vol" },
+  { term: "ซาลอน", vol: 6600, cpc: 4.72, diff: 7, intent: "Commercial", type: "High Vol" },
+  { term: "ทำสีผม", vol: 5400, cpc: 3.78, diff: 93, intent: "Informational", type: "Service" },
+  { term: "ยืดเคราติน", vol: 1900, cpc: 7.24, diff: 88, intent: "Transactional", type: "Service" },
+  { term: "ทำสีผมไฮไลท์", vol: 1600, cpc: 5.04, diff: 91, intent: "Commercial", type: "Service" },
+  { term: "ฟอกสีผม", vol: 1000, cpc: 3.46, diff: 95, intent: "Transactional", type: "Service" },
+  { term: "ร้านทําผม ใกล้ฉัน ภายใน 400ม", vol: 3600, cpc: 5.98, diff: 30, intent: "Local Urgent", type: "Location" },
+  { term: "ยืดเคราติน อยู่ได้นานไหม", vol: 880, cpc: 8.50, diff: 30, intent: "Question", type: "Long-tail" },
+  { term: "ยืดเคราติน ข้อเสีย", vol: 880, cpc: 11.65, diff: 33, intent: "Research", type: "Long-tail" },
+  { term: "ยืดเคราติน ห้ามสระผมกี่วัน", vol: 590, cpc: 26.77, diff: 3, intent: "Question", type: "Long-tail" },
+];
+
+// 4. เมทริกซ์โอกาส
+const opportunityData = [
+  { term: 'ร้านทำผม ใกล้ฉัน', x: 25, y: 90500, z: 6.30, category: 'Local' },
+  { term: 'ร้านทำผม', x: 11, y: 49500, z: 5.67, category: 'General' },
+  { term: 'ทำสีผม', x: 93, y: 5400, z: 3.78, category: 'Color' },
+  { term: 'ฟอกสีผม', x: 95, y: 1000, z: 3.46, category: 'Color' },
+  { term: 'ยืดเคราติน', x: 88, y: 1900, z: 7.24, category: 'Treatment' },
+  { term: 'ดัดผมถาวร', x: 65, y: 980, z: 8.50, category: 'Treatment' },
+];
+
+// 5. โครงสร้างแคมเปญโฆษณา
+const adStrategies = [
+  {
+    id: 1,
+    name: "แคมเปญ A: ดึงลูกค้าในพื้นที่ (ราชพฤกษ์ & กาญจนาฯ)",
+    goal: "ลูกค้าหน้าร้าน & การจองคิว",
+    budget: "50%",
+    cpc: "฿6.00",
+    keywords: ["ร้านทำผม ใกล้ฉัน", "Salon near me", "ร้านตัดผมแนะนำ", "ร้านทำผม ราชพฤกษ์"],
+    headline: "Silin Salon ราชพฤกษ์ & กาญจนาฯ | ร้านทำผมยอดนิยม ใกล้คุณ",
+    desc: "จองคิวออนไลน์ได้แล้ววันนี้ ช่างมืออาชีพ บริการระดับพรีเมียม บรรยากาศผ่อนคลาย เปิดถึง 2 ทุ่ม",
+    extensions: ["จองคิวออนไลน์", "แผนที่สาขาราชพฤกษ์", "แผนที่สาขากาญจนาฯ"]
+  },
+  {
+    id: 2,
+    name: "แคมเปญ B: บริการมูลค่าสูง (High-Value)",
+    goal: "ยอดขายมูลค่าสูง (฿3000+)",
+    budget: "30%",
+    cpc: "฿10.50",
+    keywords: ["ยืดเคราติน", "ฟอกสีผม", "ทำสีผมออร์แกนิค"],
+    headline: "เคราตินทรีตเมนต์พรีเมียม | ฟื้นฟูผมเสีย ให้เงางาม",
+    desc: "ทำสีออร์แกนิกและเคราติน ผมไม่เสีย ลาขาดผมชี้ฟู พร้อมผลิตภัณฑ์ออร์แกนิก 100% ดูแลเส้นผมคุณ",
+    extensions: ["รูป Before & After", "ผลิตภัณฑ์ออร์แกนิก", "โปรโมชั่นเคราติน"]
+  },
+  {
+    id: 3,
+    name: "แคมเปญ C: Rebranding Awareness (สาขามหาชัย)",
+    goal: "สร้างการรับรู้ (Awareness)",
+    budget: "20%",
+    cpc: "฿4.50",
+    keywords: ["ร้านทำผม มหาชัย", "Arin Salon", "ร้านทำผม สมุทรสาคร"],
+    headline: "Arin Salon มหาชัย (โดยทีมงาน Silin Salon) | โฉมใหม่ บริการเดิม",
+    desc: "ร้านทำผมคุณภาพที่คุณไว้ใจ บริหารงานโดยทีม Silin Salon มาตรฐานระดับพรีเมียม ในราคามิตรภาพ",
+    extensions: ["แผนที่สาขามหาชัย", "โปรโมชั่นเปิดตัว", "รีวิวลูกค้า"]
+  }
+];
+
+// 6. Action Plan Steps
+const actionPlan = [
+  {
+    phase: "Phase 1: เตรียมความพร้อม (Setup)",
+    week: "สัปดาห์ที่ 1",
+    tasks: [
+      "สมัคร Google Ads Account และผูกบัตรเครดิต",
+      "ติดตั้ง Google Tag Manager & GA4 บนเว็บไซต์ (เพื่อวัดผล Conversion)",
+      "ยืนยันตัวตน Google Business Profile ทั้ง 3 สาขาให้สมบูรณ์ (ลงรูป, เวลาเปิดปิด)",
+      "เตรียมรูปภาพ Banner สำหรับทำ Remarketing (ขนาด 1200x628, 1080x1080)"
+    ]
+  },
+  {
+    phase: "Phase 2: เปิดตัวแคมเปญ (Launch)",
+    week: "สัปดาห์ที่ 2",
+    tasks: [
+      "Launch แคมเปญ Search (A, B, C) โดยตั้งค่า Location Targeting ให้แม่นยำ (รัศมี 5-10 กม.)",
+      "ใส่ Negative Keywords (เช่น 'ทำเอง', 'ราคาถูกมาก', 'เรียนตัดผม') เพื่อกรองคลิกขยะ",
+      "ตั้งค่า Ad Extensions (Sitelink, Callout, Location) ให้ครบทุกสาขา"
+    ]
+  },
+  {
+    phase: "Phase 3: ปรับปรุงผลลัพธ์ (Optimize)",
+    week: "สัปดาห์ที่ 3-4",
+    tasks: [
+      "ตรวจสอบ Search Terms Report เพื่อดูว่าคนค้นหาด้วยคำว่าอะไรจริงๆ",
+      "ปรับ Bid Strategy: หาก CPC สูงเกินไป ให้ลด Bid ลง หรือเปลี่ยนเป็น Maximize Clicks",
+      "A/B Test ข้อความโฆษณา: ดูว่า Headline ไหนคนคลิกเยอะสุด",
+      "เริ่มยิง Remarketing ใส่คนที่เคยเข้าเว็บแต่ยังไม่จอง"
+    ]
+  }
+];
+
+// --- COMPONENTS ---
+
+const SectionHeader = ({ icon: Icon, title, subtitle }) => (
+  <div className="flex items-start mb-8 border-b border-slate-200 pb-6">
+    <div className="p-3 bg-indigo-50 rounded-xl mr-4 text-indigo-600 shadow-sm border border-indigo-100">
+      <Icon size={24} />
+    </div>
+    <div>
+      <h2 className="text-2xl font-bold text-slate-800 tracking-tight font-sans">{title}</h2>
+      <p className="text-slate-500 mt-1 font-sans">{subtitle}</p>
+    </div>
+  </div>
+);
+
+const KeywordRow = ({ term, vol, cpc, diff, intent, type }) => (
+  <tr className="hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0 text-sm">
+    <td className="py-4 pl-4 font-medium text-slate-700">
+      {term}
+      <div className="text-xs text-slate-400 font-light mt-0.5">{type}</div>
+    </td>
+    <td className="py-4 text-right text-slate-600 font-mono">{vol.toLocaleString()}</td>
+    <td className="py-4 text-right text-slate-600 font-mono">฿{cpc.toFixed(2)}</td>
+    <td className="py-4 px-4 text-right">
+      <span className={`px-2 py-1 rounded text-xs font-bold ${diff > 60 ? 'bg-rose-100 text-rose-700' : diff > 30 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+        {diff}/100
+      </span>
+    </td>
+    <td className="py-4 pr-4 text-right">
+      <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">{intent}</span>
+    </td>
+  </tr>
+);
+
+const GoogleAdPreview = ({ headline, desc, extensions, url }) => (
+  <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 max-w-xl font-sans">
+    <div className="flex items-center gap-2 mb-1">
+      <div className="font-bold text-slate-900 text-sm">Ad</div>
+      <div className="text-slate-600 text-xs">· {url}</div>
+    </div>
+    <div className="text-[#1a0dab] text-xl hover:underline cursor-pointer font-medium mb-1">
+      {headline}
+    </div>
+    <div className="text-[#4d5156] text-sm leading-relaxed mb-2">
+      {desc}
+    </div>
+    <div className="flex flex-wrap gap-2">
+      {extensions.map((ext, i) => (
+        <span key={i} className="text-[#1a0dab] text-xs hover:underline cursor-pointer border-r border-slate-300 pr-2 last:border-0">
+          {ext}
+        </span>
+      ))}
+    </div>
+  </div>
+);
+
+export default function MarketingPlanReport() {
+  const [activeTab, setActiveTab] = useState('summary');
+
+  return (
+    <div className="min-h-screen bg-slate-100 text-slate-900 font-sans p-4 md:p-8">
+      
+      {/* Report Container */}
+      <div className="max-w-6xl mx-auto bg-white shadow-2xl rounded-2xl overflow-hidden min-h-[900px] flex flex-col border border-slate-200">
+        
+        {/* Pro Header */}
+        <header className="bg-[#1e293b] text-white p-8 md:p-12 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-xs font-bold uppercase tracking-wider mb-4">
+                <Star size={12} fill="currentColor" /> Professional Strategy Tier
+              </div>
+              <h1 className="text-3xl md:text-5xl font-bold mb-4 tracking-tight">Digital Marketing Plan</h1>
+              <p className="text-slate-400 max-w-2xl text-lg font-light leading-relaxed">
+                แผนกลยุทธ์ครบวงจร: วิเคราะห์คีย์เวิร์ด, คู่แข่ง, แผนยิงโฆษณา Google Ads และ Action Plan 30 วันสำหรับ Silin Salon
+              </p>
+            </div>
+            <div className="text-right border-l border-slate-700 pl-6">
+              <div className="text-slate-400 text-sm uppercase tracking-wider mb-1">ลูกค้า</div>
+              <div className="font-bold text-2xl text-white">Silin Salon</div>
+              <div className="text-indigo-400 text-sm mt-1 font-medium">แผนงานไตรมาส 1 ปี 2026</div>
+            </div>
+          </div>
+        </header>
+
+        {/* Navigation Tabs */}
+        <div className="flex border-b border-slate-200 bg-white sticky top-0 z-20 px-6 shadow-sm overflow-x-auto">
+          {[
+            { id: 'summary', label: 'บทสรุปผู้บริหาร', icon: FileText },
+            { id: 'keywords', label: 'รายงานคีย์เวิร์ด', icon: Target },
+            { id: 'competitors', label: 'คู่แข่ง & กระแสโซเชียล', icon: Swords },
+            { id: 'ads_strategy', label: 'กลยุทธ์ Google Ads', icon: Search },
+            { id: 'action_plan', label: 'แผนปฏิบัติการ Google Ads', icon: Calendar },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center px-6 py-5 font-medium text-sm transition-all border-b-[3px] whitespace-nowrap outline-none focus:outline-none font-sans
+                ${activeTab === tab.id 
+                  ? 'border-indigo-600 text-indigo-600 bg-indigo-50/30' 
+                  : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
+            >
+              <tab.icon size={18} className={`mr-2.5 ${activeTab === tab.id ? 'stroke-[2.5px]' : ''}`} />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Content Area */}
+        <div className="p-8 md:p-12 flex-1 bg-[#f8fafc]">
+          
+          {/* TAB 1: EXECUTIVE SUMMARY */}
+          {activeTab === 'summary' && (
+            <div className="space-y-12 animate-in fade-in duration-500">
+              
+              <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm">
+                 <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center font-sans">
+                    <TrendingUp className="mr-3 text-indigo-600" />
+                    ภาพรวมเชิงกลยุทธ์
+                 </h3>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <p className="text-slate-600 leading-relaxed text-lg mb-6 font-sans">
+                            Silin Salon อยู่ในตำแหน่งที่ดีในตลาด <strong>"ปริมาณค้นหาสูง แต่คู่แข่งน้อย"</strong> ในพื้นที่ของคุณ 
+                            ข้อมูลชี้ว่ามีการค้นหาคำทั่วไปเกี่ยวกับร้านทำผมกว่า <span className="text-emerald-600 font-bold">140,000+ ครั้งต่อเดือน</span>
+                        </p>
+                        <p className="text-slate-600 leading-relaxed text-lg font-sans">
+                            เราได้วางแผน <strong>3 ระยะ</strong> เพื่อครอบคลุมทั้งการสร้างฐานลูกค้าในพื้นที่ราชพฤกษ์/กาญจนาฯ และการรีแบรนด์สาขามหาชัย พร้อมแผนรับมือคู่แข่งในพื้นที่
+                        </p>
+                    </div>
+                    <div className="bg-slate-50 rounded-xl p-6 border border-slate-100 flex flex-col justify-center">
+                        <div className="flex items-center justify-between mb-4 border-b border-slate-200 pb-4">
+                            <span className="text-sm font-semibold text-slate-500 uppercase">โอกาสทางการตลาด</span>
+                            <span className="text-2xl font-bold text-emerald-600">สูงมาก (High Potential)</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-semibold text-slate-500 uppercase">คู่แข่งหลักในพื้นที่</span>
+                            <span className="text-right font-medium text-slate-700 font-sans">Elite Hair, Cozy Salon, ร้านเตือน บิวตี้ (มหาชัย)</span>
+                        </div>
+                    </div>
+                 </div>
+              </div>
+
+              {/* Online Presence Section */}
+              <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm">
+                <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center font-sans">
+                  <Globe className="mr-3 text-indigo-600" />
+                  สถานะออนไลน์ปัจจุบัน
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Branch Info */}
+                  <div className="col-span-1 bg-slate-50 p-5 rounded-xl border border-slate-100">
+                    <div className="flex items-center mb-3">
+                      <MapPin className="w-5 h-5 text-rose-500 mr-2" />
+                      <h4 className="font-bold text-slate-800">สาขาที่ให้บริการ</h4>
+                    </div>
+                    <div className="space-y-4">
+                      {socialPresence.branches.map((b, i) => (
+                        <div key={i} className="border-b last:border-0 border-slate-200 pb-3 last:pb-0">
+                          <div className="font-medium text-sm text-slate-800">{b.name}</div>
+                          <div className="flex items-center justify-between mt-1">
+                             <div className="flex items-center text-xs text-slate-500">
+                                <Star className="w-3 h-3 text-amber-400 mr-1 fill-current" />
+                                {b.rating} ({b.reviews} รีวิว)
+                             </div>
+                             <span className={`text-[10px] px-2 py-0.5 rounded-full ${b.status === 'Active' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
+                                {b.status}
+                             </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Social Stats */}
+                  <div className="col-span-2 grid grid-cols-2 gap-4">
+                     <div className="bg-blue-50 p-5 rounded-xl border border-blue-100 flex items-center justify-between">
+                        <div>
+                           <div className="text-blue-600 text-sm font-bold mb-1 flex items-center"><Facebook size={16} className="mr-1"/> Facebook</div>
+                           <div className="text-2xl font-bold text-slate-800">{socialPresence.stats.facebook.followers}</div>
+                           <div className="text-xs text-slate-500">ผู้ติดตาม (Estimate)</div>
+                        </div>
+                        <div className="bg-white p-2 rounded-lg shadow-sm">
+                           <ThumbsUp size={20} className="text-blue-500"/>
+                        </div>
+                     </div>
+                     <div className="bg-pink-50 p-5 rounded-xl border border-pink-100 flex items-center justify-between">
+                        <div>
+                           <div className="text-pink-600 text-sm font-bold mb-1 flex items-center"><Instagram size={16} className="mr-1"/> Instagram</div>
+                           <div className="text-2xl font-bold text-slate-800">{socialPresence.stats.instagram.followers}</div>
+                           <div className="text-xs text-slate-500">ผู้ติดตาม (Estimate)</div>
+                        </div>
+                        <div className="bg-white p-2 rounded-lg shadow-sm">
+                           <div className="w-5 h-5 bg-gradient-to-tr from-yellow-400 to-purple-600 rounded-full"></div>
+                        </div>
+                     </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* TAB: KEYWORD REPORT */}
+          {activeTab === 'keywords' && (
+             <div className="space-y-8 animate-in fade-in duration-500">
+                <SectionHeader 
+                  icon={Target} 
+                  title="รายงานคีย์เวิร์ด (Keyword Strategy Report)" 
+                  subtitle="วิเคราะห์คำค้นหาจริงที่มีศักยภาพสูงสุดจากฐานข้อมูล Ubersuggest" 
+                />
+                
+                <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200">
+                   <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                         <thead>
+                            <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider font-semibold border-b border-slate-200">
+                               <th className="py-4 pl-4">คำค้นหา (Keyword)</th>
+                               <th className="py-4 text-right">Volume/เดือน</th>
+                               <th className="py-4 text-right">CPC (บาท)</th>
+                               <th className="py-4 px-4 text-right">ความยาก (Paid Diff)</th>
+                               <th className="py-4 pr-4 text-right">จุดประสงค์ (Intent)</th>
+                            </tr>
+                         </thead>
+                         <tbody>
+                            {detailedKeywordData.map((kw, i) => (
+                               <KeywordRow key={i} {...kw} />
+                            ))}
+                         </tbody>
+                      </table>
+                   </div>
+                </div>
+             </div>
+          )}
+
+          {/* TAB: COMPETITOR ANALYSIS (NEW) */}
+          {activeTab === 'competitors' && (
+             <div className="space-y-8 animate-in fade-in duration-500">
+                <SectionHeader 
+                  icon={Swords} 
+                  title="วิเคราะห์คู่แข่ง & กระแสโซเชียล" 
+                  subtitle="เจาะลึกร้านคู่แข่งในพื้นที่และร้านที่ถูกพูดถึงในโซเชียลมีเดีย" 
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                   {competitorData.map((comp, i) => (
+                      <div key={i} className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                         <div className="flex justify-between items-start mb-4">
+                            <div>
+                               <h3 className="font-bold text-lg text-slate-800">{comp.name}</h3>
+                               <span className="inline-block bg-slate-100 text-slate-500 text-xs px-2 py-0.5 rounded-full mt-1">
+                                  <MapPin size={10} className="inline mr-1"/>{comp.area}
+                               </span>
+                            </div>
+                            <div className="text-sm font-bold text-slate-600 bg-slate-50 px-2 py-1 rounded border border-slate-100">
+                               {comp.priceLevel}
+                            </div>
+                         </div>
+                         
+                         <div className="space-y-3 text-sm">
+                            <div className="flex items-start">
+                               <span className="w-20 text-emerald-600 font-semibold flex-shrink-0">จุดแข็ง:</span>
+                               <span className="text-slate-600">{comp.strength}</span>
+                            </div>
+                            <div className="flex items-start">
+                               <span className="w-20 text-rose-500 font-semibold flex-shrink-0">จุดอ่อน:</span>
+                               <span className="text-slate-600">{comp.weakness}</span>
+                            </div>
+                            <div className="flex items-start bg-indigo-50 p-2 rounded-lg mt-2">
+                               <span className="w-20 text-indigo-600 font-semibold flex-shrink-0"><Users size={14} className="inline mr-1"/>Social:</span>
+                               <span className="text-indigo-800 italic">"{comp.social}"</span>
+                            </div>
+                         </div>
+                      </div>
+                   ))}
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 mt-6">
+                   <h3 className="font-bold text-slate-800 mb-3 flex items-center">
+                      <TrendingUp size={18} className="mr-2 text-indigo-600"/> 
+                      สรุปเทรนด์โซเชียล (Lemon8 & Pantip)
+                   </h3>
+                   <ul className="list-disc ml-5 space-y-2 text-slate-700 text-sm">
+                      <li>ลูกค้าในย่านราชพฤกษ์ชอบร้านที่ <strong>"ตกแต่งสวย/มินิมอล"</strong> เพื่อถ่ายรูปลง IG/Lemon8 (เช่น Cozy Salon)</li>
+                      <li>ในย่านมหาชัย ลูกค้าเน้น <strong>"ความคุ้มค่าและกันเอง"</strong> รีวิวมักพูดถึงราคาถูกและช่างคุยง่าย (เช่น ร้านเตือน บิวตี้)</li>
+                      <li>เทรนด์ <strong>"ทำสีผมออร์แกนิก"</strong> กำลังมาแรงในกลุ่มลูกค้าที่มีกำลังซื้อสูงและห่วงสุขภาพผม</li>
+                   </ul>
+                </div>
+             </div>
+          )}
+
+          {/* TAB 2: GOOGLE ADS STRATEGY */}
+          {activeTab === 'ads_strategy' && (
+            <div className="space-y-10 animate-in fade-in duration-500">
+              <SectionHeader 
+                icon={Search} 
+                title="โครงสร้างแคมเปญโฆษณา (Google Ads Framework)" 
+                subtitle="ออกแบบแคมเปญอย่างแม่นยำ ครอบคลุมทั้ง 3 สาขา" 
+              />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {adStrategies.map((strategy) => (
+                  <div key={strategy.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
+                    <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                      <div className="flex justify-between items-start mb-2">
+                         <div className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold uppercase tracking-wide font-sans">
+                           {strategy.name}
+                         </div>
+                      </div>
+                      <div className="text-slate-600 text-sm mt-2 font-sans">
+                        <strong>เป้าหมายหลัก:</strong> {strategy.goal}
+                      </div>
+                    </div>
+                    <div className="p-6 flex-1 space-y-6">
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 font-sans">คำค้นหาเป้าหมาย</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {strategy.keywords.map((kw, i) => (
+                            <span key={i} className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-mono border border-slate-200">
+                              "{kw}"
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2 font-sans">
+                          <Smartphone size={14} /> ตัวอย่างโฆษณา
+                        </h4>
+                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                           <GoogleAdPreview 
+                              headline={strategy.headline}
+                              desc={strategy.desc}
+                              extensions={strategy.extensions}
+                              url="www.silinsalon.com"
+                           />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB: ACTION PLAN (NEW) */}
+          {activeTab === 'action_plan' && (
+             <div className="space-y-8 animate-in fade-in duration-500">
+                <SectionHeader 
+                  icon={Calendar} 
+                  title="แผนปฏิบัติการ Google Ads (Action Plan)" 
+                  subtitle="ไทม์ไลน์ 30 วัน เพื่อการเปิดตัวโฆษณาที่สมบูรณ์แบบ" 
+                />
+
+                <div className="space-y-6">
+                   {actionPlan.map((phase, i) => (
+                      <div key={i} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col md:flex-row">
+                         <div className="bg-indigo-600 text-white p-6 md:w-48 flex flex-col justify-center items-center text-center">
+                            <div className="font-bold text-lg">{phase.week}</div>
+                            <div className="text-indigo-200 text-xs uppercase tracking-wider mt-1">Timeline</div>
+                         </div>
+                         <div className="p-6 flex-1">
+                            <h3 className="font-bold text-lg text-slate-800 mb-4 flex items-center">
+                               <CheckCircle size={20} className="text-emerald-500 mr-2" />
+                               {phase.phase}
+                            </h3>
+                            <ul className="space-y-3">
+                               {phase.tasks.map((task, j) => (
+                                  <li key={j} className="flex items-start text-slate-700 text-sm">
+                                     <span className="w-1.5 h-1.5 bg-slate-300 rounded-full mt-1.5 mr-3 flex-shrink-0"></span>
+                                     {task}
+                                  </li>
+                               ))}
+                            </ul>
+                         </div>
+                      </div>
+                   ))}
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 flex items-start">
+                   <AlertCircle className="text-amber-600 mr-3 mt-0.5 flex-shrink-0" />
+                   <div>
+                      <h4 className="font-bold text-amber-800 text-sm">ข้อควรระวังก่อนเริ่ม:</h4>
+                      <p className="text-amber-700 text-sm mt-1">
+                         ก่อนเริ่มยิงโฆษณา ต้องมั่นใจว่าเว็บไซต์หรือหน้า Landing Page ของคุณมีปุ่ม "จองคิว" หรือ "โทร" ที่ชัดเจนและใช้งานได้จริง มิเช่นนั้นจะเสียค่าคลิกฟรีโดยไม่ได้ลูกค้า
+                      </p>
+                   </div>
+                </div>
+             </div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  );
+}
